@@ -1,53 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>RNBO Test</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-image: url('silhouette.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        height: 100vh;
+        width: 100vw;
+    }
+</style>
 </head>
 
-<body style="background:black; color:white; font-family:monospace;">
-    <h1>RNBO Web Test</h1>
-    <p>Click anywhere to start audio.</p>
+<body>
 
-    <script src="rnbo.min.js"></script>
+<script src="https://cdn.cycling74.com/rnbo/1.4.2/rnbo.min.js"></script>
+<script>
+let started = false;
 
-    <script>
-        let context;
-        let device;
+function waitForRNBO() {
+    if (typeof RNBO === "undefined") {
+        setTimeout(waitForRNBO, 50);
+        return;
+    }
 
-        async function setup() {
-            // Create AudioContext
-            context = new (window.AudioContext || window.webkitAudioContext)();
+    async function startRNBO() {
+        if (started) return;
+        started = true;
 
-            console.log("AudioContext created:", context.state);
+        const context = new (window.AudioContext || window.webkitAudioContext)();
 
-            // Load the RNBO patcher JSON
-            const response = await fetch("organic_website_soundtrack.export.json");
-            const patcher = await response.json();
+        const response = await fetch("organic_website_soundtrack.export.json");
+        const patcher = await response.json();
 
-            console.log("JSON loaded");
+        const device = await RNBO.createDevice({ context, patcher });
 
-            // Create the RNBO device
-            const factory = await RNBO.createDevice({ context, patcher });
-            device = factory;
+        device.node.connect(context.destination);
 
-            console.log("RNBO started");
-            console.log("Parameters:", Array.from(device.parameters));
-            console.log("Device node:", device.node);
+        console.log("RNBO started");
+        console.log("Parameters:", device.parameters);
+        console.log("Device node:", device.node);   
+    }
 
-            // Connect to output
-            device.node.connect(context.destination);
-        }
+    window.addEventListener("click", startRNBO);
+    window.addEventListener("touchstart", startRNBO);
+    window.addEventListener("scroll", startRNBO);
+    window.addEventListener("mousemove", startRNBO);
+}
 
-        setup();
+waitForRNBO();
+</script>
 
-        // Resume audio on click
-        document.addEventListener("click", async () => {
-            if (context && context.state === "suspended") {
-                await context.resume();
-                console.log("AudioContext resumed:", context.state);
-            }
-        });
-    </script>
 </body>
 </html>
